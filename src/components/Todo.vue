@@ -18,8 +18,10 @@ export default {
   },
   methods: {
     AddItem() {
-      this.todos.push(this.title);
-      this.title = "";
+      if (this.title !== "") {
+        this.todos.push(this.title);
+        this.title = "";
+      }
     }
   },
   components: {
