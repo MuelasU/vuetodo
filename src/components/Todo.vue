@@ -9,7 +9,35 @@
       @end="drag = false"
     >
       <transition-group>
-        <todo-item v-for="todo in todos" :key="todo" :title="todo">{{ todo }}</todo-item>
+        <todo-item
+          v-for="(todo, index) in todos"
+          :key="todo"
+          :title="todo"
+          :completed="false"
+          :index="index"
+          v-on:SetDone="setDone"
+          v-on:crossClicked="DeleteTodo"
+        ></todo-item>
+      </transition-group>
+    </draggable>
+    <hr v-if="doneTodos.length && todos.length" />
+    <draggable
+      tag="ul"
+      v-model="doneTodos"
+      v-bind="dragOptions"
+      @start="drag = true"
+      @end="drag = false"
+    >
+      <transition-group>
+        <todo-item
+          v-for="(doneTodo, index) in doneTodos"
+          :key="doneTodo"
+          :title="doneTodo"
+          :completed="true"
+          :index="index"
+          v-on:SetTodo="setTodo"
+          v-on:crossClicked="DeleteDone"
+        ></todo-item>
       </transition-group>
     </draggable>
   </div>
@@ -23,14 +51,31 @@ export default {
   data() {
     return {
       title: "",
-      todos: ["Pratice more Vue.js"],
-      drag: false
+      drag: false,
+      todos: ["Pratice more Vue.js", "Kill Corona virus"],
+      doneTodos: ["Join unichamps"]
     };
   },
   methods: {
     AddItem() {
-      this.todos.push(this.title);
-      this.title = "";
+      if (this.title !== "") {
+        this.todos.push(this.title);
+        this.title = "";
+      }
+    },
+    setTodo(index, title) {
+      this.DeleteDone(index);
+      this.todos.push(title);
+    },
+    setDone(index, title) {
+      this.DeleteTodo(index);
+      this.doneTodos.push(title);
+    },
+    DeleteTodo(index) {
+      this.todos.splice(index, 1);
+    },
+    DeleteDone(index) {
+      this.doneTodos.splice(index, 1);
     }
   },
   computed: {
