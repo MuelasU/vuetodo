@@ -1,7 +1,8 @@
 <template>
   <div class="todo-item">
     <li>
-      <i class="material-icons" @click="Check">check_box_outline_blank</i>
+      <i v-if="completed" class="material-icons" @click="Check">check_box</i>
+      <i v-else class="material-icons" @click="Check">check_box_outline_blank</i>
       <span>{{title}}</span>
     </li>
   </div>
@@ -11,21 +12,16 @@
 export default {
   name: "TodoItem",
   props: {
-    title: String
-  },
-  data() {
-    return {
-      completed: false
-    };
+    title: String,
+    index: Number,
+    completed: Boolean
   },
   methods: {
-    Check(e) {
+    Check() {
       if (this.completed) {
-        e.target.innerText = "check_box_outline_blank";
-        this.completed = false;
+        this.$emit("SetTodo", this.index, this.title);
       } else {
-        e.target.innerText = "check_box";
-        this.completed = true;
+        this.$emit("SetDone", this.index, this.title);
       }
     }
   }
