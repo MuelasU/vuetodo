@@ -20,7 +20,10 @@
         ></todo-item>
       </transition-group>
     </draggable>
-    <hr v-if="doneTodos.length && todos.length" />
+    <div v-if="doneTodos.length && todos.length" class="list-divider">
+      <hr />
+      <span>Already done</span>
+    </div>
     <draggable
       tag="ul"
       v-model="doneTodos"
@@ -96,9 +99,52 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.todo {
+  text-align: left;
+  margin: auto;
+  width: 30%;
+  min-width: 400px;
+  border: solid 1px rgba(0, 0, 0, 0.555);
+  border-radius: 15px;
+  box-shadow: 2px 4px 10px rgba(0, 0, 0, 0.13);
+  background-color: #fff;
+  padding-top: 20px;
+}
+
+ul {
+  padding: 0;
+}
+
+input {
+  display: block;
+  margin: auto;
+  align-self: center;
+  border: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.356);
+  font-size: 18px;
+  width: 270px;
+  max-width: 96%;
+}
+
+input:focus {
+  outline: none;
+}
+
+.list-divider {
+  color: rgba(40, 42, 59, 0.678);
+}
+
+.list-divider span {
+  cursor: default;
+  margin-left: 30px;
+}
+
+hr {
+  margin: 10px 20px;
+}
+
 .ghost {
-  opacity: 0.5;
-  background: #c8ebfb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.26);
 }
 
 .list-group-item {

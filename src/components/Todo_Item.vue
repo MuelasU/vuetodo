@@ -1,10 +1,18 @@
 <template>
   <div class="todo-item">
-    <li>
-      <i v-if="completed" class="material-icons" @click="Check">check_box</i>
-      <i v-else class="material-icons" @click="Check">check_box_outline_blank</i>
+    <li v-if="completed">
+      <i class="material-icons drag">drag_indicator</i>
+      <i class="material-icons" @click="Check">check_box</i>
+      <span>
+        <strike>{{title}}</strike>
+      </span>
+      <i class="material-icons cross" @click="DeleteMe">close</i>
+    </li>
+    <li v-else>
+      <i class="material-icons drag">drag_indicator</i>
+      <i class="material-icons" @click="Check">check_box_outline_blank</i>
       <span>{{title}}</span>
-      <i class="material-icons show-on-hover" @click="DeleteMe">close</i>
+      <i class="material-icons cross" @click="DeleteMe">close</i>
     </li>
   </div>
 </template>
@@ -33,23 +41,47 @@ export default {
 </script>
 
 <style scoped lang="scss">
+.todo-item {
+  list-style: none;
+}
+
 i {
   cursor: pointer;
 }
 
-.show-on-hover {
+li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+li span {
+  margin-left: 10px;
+}
+
+.cross {
   transform: scale(0.8);
-  visibility: hidden;
   border-radius: 50%;
   transition: background-color 0.2s;
   padding: 6px;
+  margin-left: auto;
 }
 
-li:hover .show-on-hover {
+.drag {
+  cursor: move;
+}
+
+.cross,
+.drag {
+  visibility: hidden;
+}
+
+li:hover .cross,
+li:hover .drag {
   visibility: visible;
 }
 
-.show-on-hover:hover {
+cross:hover {
   background-color: rgba($color: #000000, $alpha: 0.08);
 }
 </style>
