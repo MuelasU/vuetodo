@@ -3,20 +3,22 @@
     <input type="text" placeholder="I have to ..." v-model="title" @keyup.enter="AddItem" />
     <draggable
       tag="ul"
-      v-model="todos"
+      handle=".drag"
+      :group="{ put: false }"
+      :list="todos"
       v-bind="dragOptions"
       @start="drag = true"
       @end="drag = false"
     >
       <transition-group>
         <todo-item
-          v-for="(todo, index) in todos"
-          :key="todo"
-          :title="todo"
-          :completed="false"
-          :index="index"
+          v-for="todo in todos"
+          :key="todo.id"
+          :fireid="todo.id"
+          :title="todo.title"
+          :completed="todo.completed"
           v-on:SetDone="setDone"
-          v-on:crossClicked="DeleteTodo"
+          v-on:crossClicked="Delete"
         ></todo-item>
       </transition-group>
     </draggable>
@@ -26,20 +28,22 @@
     </div>
     <draggable
       tag="ul"
-      v-model="doneTodos"
+      handle=".drag"
+      :group="{ put: false }"
+      :list="doneTodos"
       v-bind="dragOptions"
       @start="drag = true"
       @end="drag = false"
     >
       <transition-group>
         <todo-item
-          v-for="(doneTodo, index) in doneTodos"
-          :key="doneTodo"
-          :title="doneTodo"
-          :completed="true"
-          :index="index"
+          v-for="todo in doneTodos"
+          :key="todo.id"
+          :title="todo.title"
+          :fireid="todo.id"
+          :completed="todo.completed"
           v-on:SetTodo="setTodo"
-          v-on:crossClicked="DeleteDone"
+          v-on:crossClicked="Delete"
         ></todo-item>
       </transition-group>
     </draggable>
@@ -48,6 +52,8 @@
 
 <script>
 import draggable from "vuedraggable";
+import { db } from "../firebase";
+let collection = db.collection("activities");
 
 export default {
   name: "Todo",
@@ -55,30 +61,70 @@ export default {
     return {
       title: "",
       drag: false,
-      todos: ["Pratice more Vue.js", "Kill Corona virus"],
-      doneTodos: ["Join unichamps"]
+      todos: [],
+      doneTodos: []
     };
+  },
+  firestore: {
+    todos: collection.where("completed", "==", false),
+    doneTodos: collection.where("completed", "==", true)
   },
   methods: {
     AddItem() {
+      //OK
       if (this.title !== "") {
-        this.todos.push(this.title);
+        collection
+          .add({
+            title: this.title,
+            completed: false
+          })
+          .then(docRef => {
+            console.log("added " + docRef.id);
+          })
+          .catch(err => {
+            console.log(err);
+          });
         this.title = "";
       }
     },
-    setTodo(index, title) {
-      this.DeleteDone(index);
-      this.todos.push(title);
+    setTodo(id) {
+      //OK
+      collection
+        .doc(id)
+        .update({ completed: false })
+        .then(() => {
+          console.log("updated " + id);
+        })
+        .catch(err => {
+          console.log(err);
+        });
     },
-    setDone(index, title) {
-      this.DeleteTodo(index);
-      this.doneTodos.push(title);
+    setDone(id) {
+      //OK
+      collection
+        .doc(id)
+        .update({ completed: true })
+        .then(() => {
+          console.log("updated " + id);
+        })
+        .catch(err => {
+          console.log(err);
+        });
     },
-    DeleteTodo(index) {
-      this.todos.splice(index, 1);
+    Delete(id) {
+      //OK
+      collection
+        .doc(id)
+        .delete()
+        .then(() => {
+          console.log("deleted " + id);
+        })
+        .catch(err => {
+          console.log(err);
+        });
     },
-    DeleteDone(index) {
-      this.doneTodos.splice(index, 1);
+    log: function(evt) {
+      window.console.log(evt);
     }
   },
   computed: {

@@ -21,20 +21,22 @@
 export default {
   name: "TodoItem",
   props: {
+    fireid: String,
     title: String,
-    index: Number,
     completed: Boolean
   },
   methods: {
     Check() {
       if (this.completed) {
-        this.$emit("SetTodo", this.index, this.title);
+        this.$emit("SetTodo", this.fireid);
+        console.log("uncheck");
       } else {
-        this.$emit("SetDone", this.index, this.title);
+        this.$emit("SetDone", this.fireid);
+        console.log("check");
       }
     },
     DeleteMe() {
-      this.$emit("crossClicked", this.index);
+      this.$emit("crossClicked", this.fireid);
     }
   }
 };
@@ -45,18 +47,19 @@ export default {
   list-style: none;
 }
 
-i {
-  cursor: pointer;
-}
-
 li {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  cursor: text;
 }
 
 li span {
   margin-left: 10px;
+}
+
+i {
+  cursor: pointer;
 }
 
 .cross {
@@ -81,7 +84,7 @@ li:hover .drag {
   visibility: visible;
 }
 
-cross:hover {
-  background-color: rgba($color: #000000, $alpha: 0.08);
+.cross:hover {
+  background-color: rgba(0, 0, 0, 0.08);
 }
 </style>
