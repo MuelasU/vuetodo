@@ -5,10 +5,9 @@
       tag="ul"
       handle=".drag"
       :group="{ put: false }"
-      :list="todos"
+      v-model="todos"
       v-bind="dragOptions"
-      @start="drag = true"
-      @end="drag = false"
+      @change="ChangeByDrag"
     >
       <transition-group>
         <todo-item
@@ -17,7 +16,7 @@
           :fireid="todo.id"
           :title="todo.title"
           :completed="todo.completed"
-          v-on:SetDone="setDone"
+          v-on:SetDone="SetDone"
           v-on:crossClicked="Delete"
         ></todo-item>
       </transition-group>
@@ -30,10 +29,9 @@
       tag="ul"
       handle=".drag"
       :group="{ put: false }"
-      :list="doneTodos"
+      v-model="doneTodos"
       v-bind="dragOptions"
-      @start="drag = true"
-      @end="drag = false"
+      @change="ChangeByDrag"
     >
       <transition-group>
         <todo-item
@@ -42,7 +40,7 @@
           :title="todo.title"
           :fireid="todo.id"
           :completed="todo.completed"
-          v-on:SetTodo="setTodo"
+          v-on:SetTodo="SetTodo"
           v-on:crossClicked="Delete"
         ></todo-item>
       </transition-group>
@@ -66,8 +64,8 @@ export default {
     };
   },
   firestore: {
-    todos: collection.where("completed", "==", false),
-    doneTodos: collection.where("completed", "==", true)
+    todos: collection.where("completed", "==", false).orderBy("index"),
+    doneTodos: collection.where("completed", "==", true).orderBy("index")
   },
   methods: {
     AddItem() {
@@ -76,10 +74,11 @@ export default {
         collection
           .add({
             title: this.title,
+            index: this.todos.length,
             completed: false
           })
-          .then(docRef => {
-            console.log("added " + docRef.id);
+          .then(() => {
+            this.Bind();
           })
           .catch(err => {
             console.log(err);
@@ -87,25 +86,23 @@ export default {
         this.title = "";
       }
     },
-    setTodo(id) {
-      //OK
+    SetTodo(id) {
       collection
         .doc(id)
-        .update({ completed: false })
+        .update({ completed: false, index: this.todos.length })
         .then(() => {
-          console.log("updated " + id);
+          this.Bind();
         })
         .catch(err => {
           console.log(err);
         });
     },
-    setDone(id) {
-      //OK
+    SetDone(id) {
       collection
         .doc(id)
-        .update({ completed: true })
+        .update({ completed: true, index: this.doneTodos.length })
         .then(() => {
-          console.log("updated " + id);
+          this.Bind();
         })
         .catch(err => {
           console.log(err);
@@ -113,18 +110,64 @@ export default {
     },
     Delete(id) {
       //OK
+      var delDoc = collection.doc(id);
+      delDoc.get().then(doc => {
+        var delDocData = doc.data();
+        var arr = delDocData.completed ? this.doneTodos : this.todos;
+        var i = delDocData.index;
+        arr.forEach(act => {
+          if (act.index > i) {
+            var nextDoc = collection.doc(act.id);
+            nextDoc.update({ index: act.index - 1 }).catch(err => {
+              console.log(err);
+            });
+          }
+        });
+        delDoc
+          .delete()
+          .then(() => {
+            this.Bind();
+          })
+          .catch(err => {
+            console.log(err);
+          });
+      });
+    },
+    ChangeByDrag(e) {
+      //OK
       collection
-        .doc(id)
-        .delete()
-        .then(() => {
-          console.log("deleted " + id);
-        })
-        .catch(err => {
-          console.log(err);
+        .where("completed", "==", e.moved.element.completed)
+        .where("index", "==", e.moved.newIndex)
+        .get()
+        .then(snap => {
+          var movedDoc = collection.doc(e.moved.element.id);
+          var forcedDoc = collection.doc(snap.docs[0].id);
+          movedDoc
+            .update({ index: e.moved.newIndex })
+            .then(() => {
+              forcedDoc
+                .update({ index: e.moved.oldIndex })
+                .then(() => {
+                  this.Bind();
+                })
+                .catch(err => {
+                  console.log(err);
+                });
+            })
+            .catch(err => {
+              console.log(err);
+            });
         });
     },
-    log: function(evt) {
-      window.console.log(evt);
+    Bind() {
+      this.$bind(
+        "todos",
+        collection.where("completed", "==", false).orderBy("index")
+      );
+      this.$bind(
+        "doneTodos",
+        collection.where("completed", "==", true).orderBy("index")
+      );
     }
   },
   computed: {

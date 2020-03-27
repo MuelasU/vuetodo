@@ -29,10 +29,8 @@ export default {
     Check() {
       if (this.completed) {
         this.$emit("SetTodo", this.fireid);
-        console.log("uncheck");
       } else {
         this.$emit("SetDone", this.fireid);
-        console.log("check");
       }
     },
     DeleteMe() {
