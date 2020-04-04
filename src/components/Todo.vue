@@ -5,19 +5,18 @@
       tag="ul"
       handle=".drag"
       :group="{ put: false }"
-      :list="todos"
+      v-model="todos"
       v-bind="dragOptions"
-      @start="drag = true"
-      @end="drag = false"
+      @change="ChangeByDrag"
     >
       <transition-group>
         <todo-item
           v-for="todo in todos"
           :key="todo.id"
-          :fireid="todo.id"
+          :index="todo.index"
           :title="todo.title"
           :completed="todo.completed"
-          v-on:SetDone="setDone"
+          v-on:SetDone="SetDone"
           v-on:crossClicked="Delete"
         ></todo-item>
       </transition-group>
@@ -30,19 +29,18 @@
       tag="ul"
       handle=".drag"
       :group="{ put: false }"
-      :list="doneTodos"
+      v-model="doneTodos"
       v-bind="dragOptions"
-      @start="drag = true"
-      @end="drag = false"
+      @change="ChangeByDrag"
     >
       <transition-group>
         <todo-item
           v-for="todo in doneTodos"
           :key="todo.id"
           :title="todo.title"
-          :fireid="todo.id"
+          :index="todo.index"
           :completed="todo.completed"
-          v-on:SetTodo="setTodo"
+          v-on:SetTodo="SetTodo"
           v-on:crossClicked="Delete"
         ></todo-item>
       </transition-group>
@@ -60,71 +58,92 @@ export default {
   data() {
     return {
       title: "",
-      drag: false,
       todos: [],
       doneTodos: []
     };
   },
-  firestore: {
-    todos: collection.where("completed", "==", false),
-    doneTodos: collection.where("completed", "==", true)
-  },
   methods: {
     AddItem() {
-      //OK
       if (this.title !== "") {
-        collection
-          .add({
-            title: this.title,
-            completed: false
-          })
-          .then(docRef => {
-            console.log("added " + docRef.id);
-          })
-          .catch(err => {
-            console.log(err);
-          });
+        var data = {
+          title: this.title,
+          index: this.todos.length,
+          completed: false,
+          id: "changeme"
+        };
+        this.todos.push(data);
+        collection.add(data).then(ref => {
+          this.todos[data.index].id = ref.id;
+          collection.doc(ref.id).update({ id: ref.id });
+        });
         this.title = "";
       }
     },
-    setTodo(id) {
-      //OK
-      collection
-        .doc(id)
-        .update({ completed: false })
-        .then(() => {
-          console.log("updated " + id);
-        })
-        .catch(err => {
-          console.log(err);
-        });
+    SetTodo(index) {
+      this.doneTodos[index].completed = false;
+      this.doneTodos[index].index = this.todos.length;
+      this.todos.push(this.doneTodos[index]);
+      this.doneTodos.splice(index, 1);
+      collection.doc(this.todos[this.todos.length - 1].id).update({
+        index: this.todos.length - 1,
+        completed: false
+      });
+      this.doneTodos.slice(index).forEach(act => {
+        act.index -= 1;
+        collection.doc(act.id).update({ index: act.index });
+      });
     },
-    setDone(id) {
-      //OK
-      collection
-        .doc(id)
-        .update({ completed: true })
-        .then(() => {
-          console.log("updated " + id);
-        })
-        .catch(err => {
-          console.log(err);
-        });
+    SetDone(index) {
+      this.todos[index].completed = true;
+      this.todos[index].index = this.doneTodos.length;
+      this.doneTodos.push(this.todos[index]);
+      this.todos.splice(index, 1);
+      collection.doc(this.doneTodos[this.doneTodos.length - 1].id).update({
+        index: this.doneTodos.length - 1,
+        completed: true
+      });
+      this.todos.slice(index).forEach(act => {
+        act.index -= 1;
+        collection.doc(act.id).update({ index: act.index });
+      });
     },
-    Delete(id) {
-      //OK
-      collection
-        .doc(id)
-        .delete()
-        .then(() => {
-          console.log("deleted " + id);
-        })
-        .catch(err => {
-          console.log(err);
+    Delete(index, completed) {
+      if (completed) {
+        collection.doc(this.doneTodos[index].id).delete();
+        this.doneTodos.splice(index, 1);
+        this.doneTodos.slice(index).forEach(act => {
+          act.index -= 1;
+          collection.doc(act.id).update({ index: act.index });
         });
+      } else {
+        collection.doc(this.todos[index].id).delete();
+        this.todos.splice(index, 1);
+        this.todos.slice(index).forEach(act => {
+          act.index -= 1;
+          collection.doc(act.id).update({ index: act.index });
+        });
+      }
     },
-    log: function(evt) {
-      window.console.log(evt);
+    ChangeByDrag(e) {
+      if (e.moved.element.completed) {
+        this.doneTodos[e.moved.newIndex].index = e.moved.newIndex;
+        this.doneTodos[e.moved.oldIndex].index = e.moved.oldIndex;
+        collection.doc(this.doneTodos[e.moved.newIndex].id).update({
+          index: e.moved.newIndex
+        });
+        collection.doc(this.doneTodos[e.moved.oldIndex].id).update({
+          index: e.moved.oldIndex
+        });
+      } else {
+        this.todos[e.moved.newIndex].index = e.moved.newIndex;
+        this.todos[e.moved.oldIndex].index = e.moved.oldIndex;
+        collection.doc(this.todos[e.moved.newIndex].id).update({
+          index: e.moved.newIndex
+        });
+        collection.doc(this.todos[e.moved.oldIndex].id).update({
+          index: e.moved.oldIndex
+        });
+      }
     }
   },
   computed: {
@@ -136,6 +155,30 @@ export default {
         ghostClass: "ghost"
       };
     }
+  },
+  beforeCreate() {
+    collection
+      .where("completed", "==", false)
+      .orderBy("index")
+      .get()
+      .then(querySnapshot => {
+        this.todos = querySnapshot.docs.map(doc => {
+          var data = doc.data();
+          data.id = doc.id;
+          return data;
+        });
+      });
+    collection
+      .where("completed", "==", true)
+      .orderBy("index")
+      .get()
+      .then(querySnapshot => {
+        this.doneTodos = querySnapshot.docs.map(doc => {
+          var data = doc.data();
+          data.id = doc.id;
+          return data;
+        });
+      });
   },
   components: {
     "todo-item": require("./Todo_Item").default,

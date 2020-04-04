@@ -21,22 +21,20 @@
 export default {
   name: "TodoItem",
   props: {
-    fireid: String,
+    index: Number,
     title: String,
     completed: Boolean
   },
   methods: {
     Check() {
       if (this.completed) {
-        this.$emit("SetTodo", this.fireid);
-        console.log("uncheck");
+        this.$emit("SetTodo", this.index);
       } else {
-        this.$emit("SetDone", this.fireid);
-        console.log("check");
+        this.$emit("SetDone", this.index);
       }
     },
     DeleteMe() {
-      this.$emit("crossClicked", this.fireid);
+      this.$emit("crossClicked", this.index, this.completed);
     }
   }
 };
